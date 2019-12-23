@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Implementasi NoSQL Database</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="fontawesome/css/fontawesome.min.css">
+    <link rel="stylesheet" href="fontawesome/css/solid.min.css">
+    <link rel="stylesheet" href="fontawesome/css/brands.min.css">
+    <script src="fontawesome/js/fontawesome.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h3>Implementasi NoSql Database in Load Balancing (SERVER 1)</h3>
+                <br><br>
+                <div class="layout-data">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <button class="btn btn-success float-right mb-2" v-on:click="tambah_data"><i
+                                    class="fas fa-plus"></i> Tambah
+                                Data</button>
+                            <div class="clearfix"></div>
+                        </div>
+                    </div>
+                    <table class="table table-hover table-bordered table-striped" id="tbl_data">
+                        <thead class="thead-dark">
+                            <th>No.</th>
+                            <th>Nama</th>
+                            <th>email</th>
+                            <th>#</th>
+                        </thead>
+                        <tbody>
+                            <template v-for="(item,index) in items">
+                                <tr>
+                                    <td>{{index+1}}</td>
+                                    <td>{{item.doc.name}}</td>
+                                    <td>{{item.doc.email}}</td>
+                                    <td><button class="btn btn-primary btn-sm btn-edit" :data-id="item.id"
+                                            :data-key="item.doc._rev" v-on:click="edit"><i
+                                                class="fas fa-edit"></i></button>
+                                        <button class="btn btn-danger btn-sm btn-delete" :data-id="item.id"
+                                            :data-key="item.doc._rev" v-on:click="hapus"><i
+                                                class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="layout-form" style="display: none;">
+                    <form action="#" v-on:submit.prevent="tambah">
+                        <h4>Tambah Data</h4>
+                        <div class="row">
+                            <div class="form-group col-md-6">
+                                <label for="nama">Nama</label>
+                                <input type="text" id="nama" name="nama" class="form-control" required>
+                                <input type="hidden" name="_id" id="_id">
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="email">Email</label>
+                                <input type="email" name="email" id="email" class="form-control" required>
+                            </div>
+                            <div class="form-group col-md-12">
+                                <button class="btn btn-primary btn-save"><i class="fas fa-save"></i> Simpan</button>
+                                <button class="btn btn-warning btn-cancel" type="button"><i class="fas fa-times"></i>
+                                    Batal</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pouchdb/7.1.1/pouchdb.min.js" SameSite="None"></script>
+    <script src="https://unpkg.com/pouchdb@7.1.1/dist/pouchdb.find.min.js" SameSite="None"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.0"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+    <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js"></script>
+    <script>
+        var db = new PouchDB('http://192.168.43.122:5984/sister');
+        var example1;
+        var table;
+        db.allDocs({
+            include_docs: true,
+            attachments: true,
+            sort: ['name']
+        }).then(data => {
+            load_data(data);
+        });
+
+        function load_data(data) {
+            example1 = new Vue({
+                el: '#example-1',
+                data: {
+                    items: data.rows
+                },
+                methods: {
+                    edit: event => {
+                        console.log(event.currentTarget.getAttribute("data-id"));
+                    },
+                    tambah: event => {
+                        var name = document.getElementById("nama").value;
+                        var email = document.getElementById("email").value;
+                        var data = {
+                            name: name,
+                            email: email
+                        }
+                        save_data(data);
+                        return false;
+                    },
+                    hapus: event => {
+                        var id = event.currentTarget.getAttribute("data-id");
+                        var key = event.currentTarget.getAttribute("data-key");
+                        var deleted = confirm("Apakah anda yakin akan menghapus data?");
+                        if (deleted) {
+                            db.remove(id, key).then(function (aol) {
+                                if (aol.ok) {
+                                    reload_data();
+                                }
+                            })
+                        }
+                    },
+                    tambah_data: event => {
+                        $('.layout-form').slideDown();
+                        $('.layout-data').slideUp();
+                    }
+                }
+            });
+
+            table = $('#tbl_data').DataTable();
+        }
+
+        function save_data(data) {
+            db.post(data).then(respone => {
+                document.location.reload()
+            });
+        }
+
+        function reload_data() {
+            db.find({
+                selector: {
+                    name: {
+                        $gte: null
+                    }
+                },
+                sort: ['name']
+            }).then(data => {
+                example1.$data.items = data.docs;
+                table.destroy();
+                table = $('#tbl_data').DataTable();
+            });
+        }
+    </script>
+</body>
+
+</html>
