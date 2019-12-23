@@ -1,0 +1,47 @@
+netplan : 
+network;
+ethernets;
+ enp0s3;
+ dhcp4; no
+ addresses;
+ -192.168.137.10/24
+ gateway4 : 192.168.137.1
+ nameservers;
+	addresses;
+	-8.8.8.8
+ version: 2
+
+
+Konfigurasi haproxy : 
+frontend pertama 	 	
+		bind 192.168.137.10:80 
+ 	 	mode tcp 
+ 	 	default_backend kedua 
+backend kedua 
+ 	 	balance roundrobin  	 	mode tcp 
+ 	 	server web1 192.168.137.2 check weight 2  	 	
+		server web2 192.168.137.3 check weight 2 
+listen stats 
+ 	 	bind 192.168.137.10:8080  	 	
+		stats enable
+  	 	mode http 
+ 		stats hide-version
+  	 	stats refresh 30s
+  	 	stats show-node
+  	 	stats auth admin:admin
+  	 	stats uri /status
+
+
+Konfigurasi Nginx : 
+upstream backend{
+	server 192.168.137.2;
+	server 192.168.137.3;
+}
+server{
+	listen 80;
+	server_name 192.168.137.11;
+	location / {
+		proxy_pass http://backend;
+	}
+}
+	
