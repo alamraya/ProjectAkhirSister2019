@@ -1,0 +1,19 @@
+upstream www {
+	least_conn;
+	server 192.168.43.136;
+	server 192.168.43.26;
+}
+
+server {
+	listen 80 default_server;
+	listen [::]:80 default_server;
+	root /var/www/html/game/public;
+
+	index index.html index.htm index.nginx-debian.html index.php;
+
+	server_name 192.168.43.38;
+	
+	location / {
+		proxy_pass http://www/game/public/;
+	}
+}
