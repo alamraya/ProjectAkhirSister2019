@@ -1,0 +1,20 @@
+frontend Local_Server
+    bind 192.168.43.2:80
+    mode http
+    default_backend http_back
+
+backend http_back
+    balance leastconn
+    mode http
+    server server1.egi.com  192.168.43.122:80 check
+    server server2.ilham.com 192.168.43.199:80 check
+
+listen stats
+    bind *:3001
+    stats enable
+    mode http
+    stats hide-version
+    stats refresh 30s
+    stats show-node
+    stats auth admin:admin
+    stats uri  /status
